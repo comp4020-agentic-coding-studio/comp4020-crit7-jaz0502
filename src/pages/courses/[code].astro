@@ -1,0 +1,93 @@
+---
+import Base from "../../layouts/Base.astro";
+import {
+  checkEligibility,
+  findCourse,
+  incompatibleWith,
+  listOfferings,
+  requirementGroups,
+  TERM,
+  termLabel,
+} from "../../lib/db";
+import { currentStudent } from "../../lib/session";
+
+const course = findCourse(Astro.params.code ?? "");
+if (!course) return Astro.rewrite("/404");
+
+const student = currentStudent(Astro.cookies);
+const groups = requirementGroups(course.id);
+const clashes = incompatibleWith(course.id);
+const offerings = listOfferings(course.id);
+
+const rows = offerings.map((offering) => ({
+  offering,
+  eligibility: student ? checkEligibility(student.id, offering.id) : undefined,
+}));
+---
+
+<Base title={`${course.code} ${course.title}`}>
+  <h1>{course.code} {course.title}</h1>
+  <p>{course.units} units</p>
+  <p>{course.description}</p>
+
+  <h2>Requisites</h2>
+  <p>{course.requisiteText}</p>
+  {
+    groups.length > 0 && (
+      <>
+        <p>Of that, this app checks:</p>
+        <ul>
+          {groups.map((group) => (
+            <li>
+              {group.options.length === 1
+                ? `You have completed ${group.options[0]?.code}`
+                : `You have completed one of ${group.options.map((o) => o.code).join(", ")}`}
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+  {
+    clashes.length > 0 && (
+      <p>Incompatible with {clashes.map((c) => c.code).join(", ")} — you can't take both.</p>
+    )
+  }
+
+  <h2>Offerings</h2>
+  <p>
+    Every class number below is real, and you never need to read one. Enrolling takes the code
+    and the semester; the app looks the rest up.
+  </p>
+  <ul class="records">
+    {
+      rows.map(({ offering, eligibility }) => (
+        <li>
+          <span class="code">{termLabel(offering.year, offering.semester)}</span>
+          <span class="meta">
+            class number {offering.classNumber} · {offering.mode}
+            {offering.lastDayToEnrol ? ` · enrol by ${offering.lastDayToEnrol}` : ""}
+          </span>
+          {!student ? (
+            <p class="blocked">
+              <a href="/">Tell the app who you are</a> to enrol.
+            </p>
+          ) : offering.year !== TERM.year || offering.semester !== TERM.semester ? (
+            <p class="blocked">
+              Enrolment is open for {termLabel(TERM.year, TERM.semester)} only.
+            </p>
+          ) : eligibility?.ok ? (
+            <form method="post" action="/api/enrol">
+              <input type="hidden" name="courseCode" value={course.code} />
+              <input type="hidden" name="year" value={String(offering.year)} />
+              <input type="hidden" name="semester" value={offering.semester} />
+              <button>Enrol in {course.code}</button>
+            </form>
+          ) : (
+            <p class="blocked">{eligibility?.detail}</p>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</Base>

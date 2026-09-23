@@ -1,0 +1,77 @@
+---
+import Base from "../layouts/Base.astro";
+import { listEnrolments, TERM, termLabel } from "../lib/db";
+import { currentStudent } from "../lib/session";
+
+const student = currentStudent(Astro.cookies);
+const record = student ? listEnrolments(student.id) : [];
+const enrolled = record.filter((e) => e.status === "enrolled");
+const completed = record.filter((e) => e.status === "completed");
+const units = enrolled.reduce((total, e) => total + e.units, 0);
+---
+
+<Base title="My enrolment">
+  <h1>My enrolment</h1>
+
+  {
+    !student ? (
+      <p>
+        <a href="/">Tell the app who you are</a> and your record will show up here.
+      </p>
+    ) : (
+      <>
+        <p>
+          {student.name} · {student.uniId}
+        </p>
+
+        <h2>{termLabel(TERM.year, TERM.semester)}</h2>
+        {enrolled.length === 0 ? (
+          <p>
+            Not enrolled in anything yet. <a href="/">Find a course</a>.
+          </p>
+        ) : (
+          <>
+            <p>
+              {enrolled.length} {enrolled.length === 1 ? "course" : "courses"} · {units} units
+            </p>
+            <ul class="records">
+              {enrolled.map((e) => (
+                <li>
+                  <a class="code" href={`/courses/${e.code.toLowerCase()}/`}>
+                    {e.code}
+                  </a>{" "}
+                  {e.title}
+                  <span class="meta">
+                    {termLabel(e.year, e.semester)} · class number {e.classNumber} · {e.mode}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        <h2>Completed</h2>
+        <p>
+          What the requisite checks are reading. A real system would take this from your student
+          record; this prototype has no record to read, so every new account starts from the same
+          point in a degree.
+        </p>
+        {completed.length === 0 ? (
+          <p>Nothing recorded.</p>
+        ) : (
+          <ul class="records">
+            {completed.map((e) => (
+              <li>
+                <a class="code" href={`/courses/${e.code.toLowerCase()}/`}>
+                  {e.code}
+                </a>{" "}
+                {e.title}
+                <span class="meta">{termLabel(e.year, e.semester)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    )
+  }
+</Base>

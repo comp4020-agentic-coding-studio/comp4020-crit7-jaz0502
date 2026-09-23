@@ -1,53 +1,160 @@
 ---
-import { listMessages } from "../lib/db";
-import "../styles.css";
+import Base from "../layouts/Base.astro";
+import {
+  checkEligibility,
+  findCourse,
+  listEnrolments,
+  searchCatalogue,
+  TERM,
+  termLabel,
+} from "../lib/db";
+import { currentStudent } from "../lib/session";
 
-const messages = listMessages();
+const student = currentStudent(Astro.cookies);
+const query = Astro.url.searchParams.get("q") ?? "";
+
+// The POST handlers redirect back here with a reason code rather than a
+// message: the detailed explanation is already rendered inline against the
+// course itself, and echoing arbitrary text from a URL would let a crafted
+// link put any words on the page.
+const REASONS: Record<string, string> = {
+  "already-enrolled": "you're already enrolled in it",
+  "already-completed": "you've already completed it",
+  incompatible: "it's incompatible with something you've taken",
+  "missing-requisite": "you haven't completed its requisites",
+  "unknown-offering": "it isn't offered in this semester",
+  "unknown-course": "no course matches that code",
+};
+const errorReason = Astro.url.searchParams.get("error");
+const errorCourse = findCourse(Astro.url.searchParams.get("course") ?? "")?.code;
+const errorText = errorReason && REASONS[errorReason] ? REASONS[errorReason] : undefined;
+
+const enrolled = student
+  ? listEnrolments(student.id).filter(
+      (e) => e.status === "enrolled" && e.year === TERM.year && e.semester === TERM.semester,
+    )
+  : [];
+
+const results = student
+  ? searchCatalogue(query).map((row) => ({
+      ...row,
+      eligibility: row.offering ? checkEligibility(student.id, row.offering.id) : undefined,
+    }))
+  : [];
 ---
 
-<!doctype html>
-<html lang="en-AU">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COMP4020 prototype</title>
-  </head>
-  <body>
-    <nav aria-label="site">
-      <a href="/">Guestbook</a>
-      <a href="/readme/">About</a>
-    </nav>
-    <main>
-      <h1>Guestbook</h1>
-      <p>
-        A minimal full-stack starter: messages live in SQLite on the machine's
-        volume (state survives a reload and a redeploy), and new messages
-        appear in every open tab over a server-sent-events stream — open this
-        page twice and sign it in one. Replace all of this with your own
-        prototype.
-      </p>
-      <form method="post" action="/api/messages">
-        <label for="body">Leave a message</label>
-        <input id="body" name="body" required maxlength="500" />
-        <button>Sign</button>
-      </form>
-      <ul id="messages">
-        {messages.map((message) => <li>{message.body}</li>)}
-      </ul>
-    </main>
-    <script>
-      // The live half of the demo: subscribe to the SSE stream and prepend
-      // messages as they arrive. The form itself needs none of this — its
-      // POST + redirect re-renders the submitting tab from SQLite; this
-      // stream is how every other tab finds out.
-      const list = document.querySelector("#messages");
+<Base title="Enrol — ANU course enrolment">
+  <h1>Enrol</h1>
+
+  {
+    !student && (
+      <>
+        <p>
+          ANU makes you enrol by class number: you find the course on Programs and Courses, read a
+          four or five digit number out of the offerings table, then retype that number into a
+          different system that never mentions the course code. This one takes the course code.
+        </p>
+        <form method="post" action="/api/student">
+          <label for="uniId">University ID</label>
+          <input id="uniId" name="uniId" required maxlength="20" placeholder="u1234567" />
+          <label for="name">Name</label>
+          <input id="name" name="name" required maxlength="100" placeholder="Your name" />
+          <button>Start enrolling</button>
+        </form>
+        <p>No password — this is a prototype, and identity isn't the part of enrolment it argues about.</p>
+      </>
+    )
+  }
+
+  {
+    student && (
+      <>
+        <p>
+          Enrolling {student.name} ({student.uniId}) into <strong>{termLabel(TERM.year, TERM.semester)}</strong>.
+          Search by course code — the class number is shown to you, never asked for.
+        </p>
+
+        {errorText && (
+          <p class="alert" role="alert">
+            Couldn't enrol you in {errorCourse ?? "that course"} — {errorText}.
+          </p>
+        )}
+
+        <h2>Your enrolment</h2>
+        {enrolled.length === 0 ? (
+          <p>Nothing yet. Find a course below.</p>
+        ) : (
+          <ul id="enrolled" class="records">
+            {enrolled.map((e) => (
+              <li>
+                <span class="code">{e.code}</span> {e.title}
+                <span class="meta">
+                  {e.units} units · class number {e.classNumber} · {e.mode}
+                </span>
+                <form method="post" action="/api/drop">
+                  <input type="hidden" name="courseCode" value={e.code} />
+                  <input type="hidden" name="year" value={String(e.year)} />
+                  <input type="hidden" name="semester" value={e.semester} />
+                  <button>Drop {e.code}</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <h2>Find a course</h2>
+        <form method="get" action="/">
+          <label for="q">Course code or title</label>
+          <input id="q" name="q" value={query} maxlength="60" placeholder="COMP3430" />
+          <button>Search</button>
+        </form>
+
+        {results.length === 0 ? (
+          <p>{query ? `No course matches “${query}”.` : "The catalogue is empty."}</p>
+        ) : (
+          <ul class="records">
+            {results.map(({ course, offering, eligibility }) => (
+              <li>
+                <a class="code" href={`/courses/${course.code.toLowerCase()}/`}>
+                  {course.code}
+                </a>{" "}
+                {course.title}
+                <span class="meta">
+                  {course.units} units
+                  {offering ? ` · class number ${offering.classNumber} · ${offering.mode}` : ""}
+                </span>
+                {!offering ? (
+                  <p class="blocked">Not offered in {termLabel(TERM.year, TERM.semester)}.</p>
+                ) : eligibility?.ok ? (
+                  <form method="post" action="/api/enrol">
+                    <input type="hidden" name="courseCode" value={course.code} />
+                    <input type="hidden" name="year" value={String(TERM.year)} />
+                    <input type="hidden" name="semester" value={TERM.semester} />
+                    <button>Enrol in {course.code}</button>
+                  </form>
+                ) : (
+                  <p class="blocked">{eligibility?.detail}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    )
+  }
+</Base>
+
+{
+  // A change made in another tab shows up here without a reload. The form
+  // needs none of this — its POST and redirect re-render the acting tab from
+  // SQLite; this is how every *other* tab finds out. Scoped to this student,
+  // so one person's enrolment doesn't reload someone else's browser.
+  student && (
+    <script is:inline define:vars={{ studentId: student.id }}>
       const source = new EventSource("/api/events");
       source.addEventListener("message", (event) => {
-        const message = JSON.parse(event.data);
-        const item = document.createElement("li");
-        item.textContent = message.body;
-        list?.prepend(item);
+        if (JSON.parse(event.data).studentId === studentId) window.location.reload();
       });
     </script>
-  </body>
-</html>
+  )
+}
