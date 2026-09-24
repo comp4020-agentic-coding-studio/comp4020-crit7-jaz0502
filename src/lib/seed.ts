@@ -8,9 +8,15 @@ import { courses, incompatibilities, offerings, requirements } from "./schema";
 // historical fact — but none of them are invented, which matters for an app
 // whose whole argument is about class numbers.
 //
-// Four codes that appear in COMP3430's published requisite text (COMP1030,
-// COMP1040) and two retired codes (COMP2420, COMP2600) have no P&C page, so
-// they are not in the catalogue and not in any rule below.
+// Some codes named in published requisite text have no P&C page at all
+// (COMP1030, COMP1040) and some are retired (COMP2420, COMP2600). They aren't
+// in the catalogue, and no rule here points at them.
+//
+// Where a real rule names a course this catalogue doesn't carry, or turns on a
+// unit threshold this model can't express, the course's requisiteText quotes
+// the rule in full and says which part is actually checked. Being explicit
+// about that beats silently enforcing half a rule — half of a disjunction is
+// stricter than the real thing, which is why COMP2620 enforces nothing.
 
 type Seed = {
   code: string;
@@ -98,8 +104,8 @@ const CATALOGUE: Seed[] = [
     title: "Relational Databases",
     description:
       "Designing and using relational databases: the relational model, SQL, entity-relationship modelling, functional dependencies, normalisation, and query processing and optimisation.",
-    requisiteText: "COMP1100 or COMP1130 or INFS1001 or COMP1730. (INFS1001 is outside this prototype's catalogue.)",
-    requires: [["COMP1100", "COMP1130", "COMP1730"]],
+    requisiteText: "COMP1100 or COMP1130 or INFS1001 or COMP1730.",
+    requires: [["COMP1100", "COMP1130", "COMP1730", "INFS1001"]],
     offerings: [
       { year: 2027, semester: "First", classNumber: "5101" },
       { year: 2027, semester: "Second", classNumber: "10104" },
@@ -180,6 +186,75 @@ const CATALOGUE: Seed[] = [
       { year: 2027, semester: "Second", classNumber: "9373" },
       { year: 2028, semester: "First", classNumber: "5884" },
       { year: 2028, semester: "Second", classNumber: "10267" },
+    ],
+  },
+
+  // Transcribed in a second pass, to deepen the COMP chain. COMP2120 was
+  // looked up and left out: its requisite is COMP2100, which isn't in this
+  // catalogue, and it's satisfied by concurrent enrolment ("or be currently
+  // studying"), which this model has no way to express.
+  {
+    code: "INFS1001",
+    title: "Business Information Systems",
+    description:
+      "A grounding in business information systems as the bridge between management and operation, spanning accounting, finance, sales and marketing, systems design and executive strategy.",
+    requisiteText: "No prerequisites. Assumed knowledge: some familiarity with basic computer applications.",
+    offerings: [
+      { year: 2027, semester: "First", classNumber: "4535" },
+      { year: 2027, semester: "Second", classNumber: "9552" },
+      { year: 2028, semester: "First", classNumber: "6037" },
+      { year: 2028, semester: "Second", classNumber: "10425" },
+    ],
+  },
+  {
+    code: "COMP1600",
+    title: "Foundations of Computing",
+    description:
+      "The formal notations used to describe computation and argue rigorously about programs: predicate calculus and natural deduction, inductive data types with structural induction, and specification languages for verification.",
+    requisiteText:
+      "6 units of MATH courses, and COMP1100 or COMP1130. Only the COMP1100/COMP1130 half is checked here — unit-threshold rules aren't modelled, so this check is more permissive than the real one.",
+    requires: [["COMP1100", "COMP1130"]],
+    offerings: [
+      { year: 2027, semester: "Second", classNumber: "10088" },
+      { year: 2028, semester: "Second", classNumber: "10849" },
+    ],
+  },
+  {
+    code: "COMP2300",
+    title: "Computer Architecture",
+    description:
+      "Digital circuit design and computer architecture built bottom-up — combinational and sequential logic, ALUs and RAM, instruction sets and assembly, interrupts, pipelining and speculation.",
+    requisiteText:
+      "(COMP1100 or COMP1130 or COMP1730) and 6 units of 1000-level MATH courses. Only the named-course half is checked here — unit-threshold rules aren't modelled, so this check is more permissive than the real one.",
+    requires: [["COMP1100", "COMP1130", "COMP1730"]],
+    offerings: [
+      { year: 2027, semester: "First", classNumber: "5055" },
+      { year: 2028, semester: "First", classNumber: "6682" },
+    ],
+  },
+  {
+    code: "COMP2310",
+    title: "Systems, Networks, and Concurrency",
+    description:
+      "Concurrent, parallel and distributed programming, together with operating-system concerns (scheduling, memory management, security) and networking from message passing to dependable protocols.",
+    requisiteText:
+      "COMP1110 or COMP1140, and COMP2300 or ENGN2219. ENGN2219 is outside this prototype's catalogue, so that alternative isn't offered here — this check is stricter than the real rule.",
+    requires: [["COMP1110", "COMP1140"], ["COMP2300"]],
+    offerings: [
+      { year: 2027, semester: "Second", classNumber: "10116" },
+      { year: 2028, semester: "Second", classNumber: "10870" },
+    ],
+  },
+  {
+    code: "COMP2620",
+    title: "Logic",
+    description:
+      "Propositional and predicate logic as the underlying mathematics of computer science: reasoning within them, reasoning about their limits, and applying them to natural-language and computing problems.",
+    requisiteText:
+      "6 units of MATH courses, or COMP1600. Nothing is checked here: the rule is a choice between a unit threshold and a course, and enforcing only the COMP1600 half would wrongly refuse anyone who qualified through MATH.",
+    offerings: [
+      { year: 2027, semester: "First", classNumber: "5091" },
+      { year: 2028, semester: "First", classNumber: "6496" },
     ],
   },
 ];
