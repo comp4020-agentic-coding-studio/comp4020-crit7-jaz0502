@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { courses, incompatibilities, offerings, requirements } from "./schema";
 
@@ -260,27 +261,38 @@ const CATALOGUE: Seed[] = [
 ];
 
 /**
- * Populate an empty catalogue. Runs at boot so a fresh Fly volume comes up
- * with courses in it; does nothing if any course already exists, so a
- * redeploy never disturbs data on the volume. Takes the database rather than
- * importing it, so seeding stays out of db.ts's import cycle.
+ * Bring the stored catalogue into line with the list above. Runs when db.ts is
+ * first imported — in practice the first request after a restart, the same
+ * point the migrations run — so a fresh Fly volume comes up populated and an
+ * existing one picks up corrections and new courses on the next deploy.
+ *
+ * It reconciles rather than seeds-once: the catalogue is reference data
+ * derived from this file, so the file is the authority every time. Only the
+ * catalogue is touched — students and their enrolments are the app's real
+ * state and are never written here. Offerings are added and updated but never
+ * removed, because an enrolment may point at one.
+ *
+ * Takes the database rather than importing it, so this stays out of db.ts's
+ * import cycle.
  */
-export function seedCatalogue(db: BetterSQLite3Database): void {
-  if (db.select().from(courses).limit(1).all().length > 0) return;
-
+export function syncCatalogue(db: BetterSQLite3Database): void {
   const ids = new Map<string, number>();
+
   for (const entry of CATALOGUE) {
-    const row = db
-      .insert(courses)
-      .values({
-        code: entry.code,
-        title: entry.title,
-        description: entry.description,
-        requisiteText: entry.requisiteText,
-      })
-      .returning()
-      .get();
-    ids.set(entry.code, row.id);
+    const fields = {
+      title: entry.title,
+      description: entry.description,
+      requisiteText: entry.requisiteText,
+    };
+    const existing = db.select().from(courses).where(eq(courses.code, entry.code)).get();
+
+    if (existing) {
+      db.update(courses).set(fields).where(eq(courses.id, existing.id)).run();
+      ids.set(entry.code, existing.id);
+    } else {
+      const row = db.insert(courses).values({ code: entry.code, ...fields }).returning().get();
+      ids.set(entry.code, row.id);
+    }
   }
 
   for (const entry of CATALOGUE) {
@@ -288,8 +300,38 @@ export function seedCatalogue(db: BetterSQLite3Database): void {
     if (courseId === undefined) continue;
 
     for (const offering of entry.offerings) {
-      db.insert(offerings).values({ courseId, ...offering }).run();
+      const existing = db
+        .select()
+        .from(offerings)
+        .where(
+          and(
+            eq(offerings.courseId, courseId),
+            eq(offerings.year, offering.year),
+            eq(offerings.semester, offering.semester),
+          ),
+        )
+        .get();
+
+      if (existing) {
+        db.update(offerings)
+          .set({ classNumber: offering.classNumber })
+          .where(eq(offerings.id, existing.id))
+          .run();
+      } else {
+        db.insert(offerings).values({ courseId, ...offering }).run();
+      }
     }
+  }
+
+  // Rules are wholly derived from this file and nothing references them, so
+  // they're rebuilt outright — that way a corrected rule replaces the old one
+  // instead of accumulating alongside it.
+  db.delete(requirements).run();
+  db.delete(incompatibilities).run();
+
+  for (const entry of CATALOGUE) {
+    const courseId = ids.get(entry.code);
+    if (courseId === undefined) continue;
 
     entry.requires?.forEach((group, index) => {
       for (const code of group) {

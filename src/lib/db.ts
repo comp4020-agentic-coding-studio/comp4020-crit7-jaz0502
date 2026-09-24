@@ -4,7 +4,7 @@ import Database from "better-sqlite3";
 import { and, eq, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { seedCatalogue } from "./seed";
+import { syncCatalogue } from "./seed";
 import {
   type Course,
   courses,
@@ -40,7 +40,7 @@ export const db = drizzle(client);
 // run them from. The flow: edit src/lib/schema.ts, `pnpm db:generate`,
 // commit the migration it writes to drizzle/.
 migrate(db, { migrationsFolder: "./drizzle" });
-seedCatalogue(db);
+syncCatalogue(db);
 
 export type { Course, Enrolment, Offering, Student };
 
