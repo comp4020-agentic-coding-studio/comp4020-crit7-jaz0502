@@ -12,6 +12,7 @@ import { currentStudent } from "../lib/session";
 
 const student = currentStudent(Astro.cookies);
 const query = Astro.url.searchParams.get("q") ?? "";
+const eligibleOnly = Astro.url.searchParams.get("eligibleOnly") === "1";
 
 // The POST handlers redirect back here with a reason code rather than a
 // message: the detailed explanation is already rendered inline against the
@@ -36,10 +37,15 @@ const enrolled = student
   : [];
 
 const results = student
-  ? searchCatalogue(query).map((row) => ({
-      ...row,
-      eligibility: row.offering ? checkEligibility(student.id, row.offering.id) : undefined,
-    }))
+  ? searchCatalogue(query)
+      .map((row) => ({
+        ...row,
+        eligibility: row.offering ? checkEligibility(student.id, row.offering.id) : undefined,
+      }))
+      // "Offered now, and eligible" needs both facts computed above, so the
+      // tickbox filters this list rather than changing what searchCatalogue
+      // fetches.
+      .filter((row) => !eligibleOnly || (row.offering && row.eligibility?.ok))
   : [];
 ---
 
@@ -107,10 +113,20 @@ const results = student
           <label for="q">Course code or title</label>
           <input id="q" name="q" value={query} maxlength="60" placeholder="COMP3430" />
           <button>Search</button>
+          <label class="checkbox">
+            <input type="checkbox" name="eligibleOnly" value="1" checked={eligibleOnly} />
+            Only show courses offered now that I can enrol in
+          </label>
         </form>
 
         {results.length === 0 ? (
-          <p>{query ? `No course matches “${query}”.` : "The catalogue is empty."}</p>
+          <p>
+            {query
+              ? `No course matches “${query}”${eligibleOnly ? " that you can enrol in now" : ""}.`
+              : eligibleOnly
+                ? "Nothing you're eligible to enrol in right now."
+                : "The catalogue is empty."}
+          </p>
         ) : (
           <ul class="records">
             {results.map(({ course, offering, eligibility }) => (
