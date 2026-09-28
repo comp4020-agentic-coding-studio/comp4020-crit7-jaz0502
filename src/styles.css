@@ -1,125 +1,359 @@
+/* ANU's identity guidelines treat gold as a highlight, not a field: it should
+   rarely be a background and never much of the page, carried instead by strong
+   black and white. That rules out the usual soft-grey-canvas-and-floating-cards
+   look, and suggests something closer to a printed academic record — white
+   paper, black ink, hairline rules, and gold marking only the things that
+   matter: the masthead, and the one state you can act on.
+
+   ANU gold is #BE830E at 3.26:1 on white. That clears the 3:1 required of
+   borders and rules but not the 4.5:1 required of text, so gold appears as
+   structure at full strength and as type only in a darkened tint. */
+
+:root {
+  --gold: #be830e;
+  --gold-ink: #7d5608;
+  --gold-tint: #f5edde;
+  --ink: #000000;
+  --ink-2: #4a463f;
+  --ink-3: #6b665c;
+  --paper: #ffffff;
+  --rule: #ddd8cd;
+  --rule-strong: #b8b2a4;
+  --danger: #8c1d18;
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  padding: 2rem 1.25rem;
+  padding: 0 1.25rem 5rem;
   font-family: system-ui, sans-serif;
+  font-size: 1rem;
   line-height: 1.6;
-  color: #1a1a1a;
-  background: #fbfbfa;
+  color: var(--ink);
+  background: var(--paper);
 }
 
 main {
-  max-width: 44rem;
+  max-width: 45rem;
   margin: 0 auto;
 }
 
+/* --- masthead and navigation ---------------------------------------------- */
+
+.masthead {
+  max-width: 45rem;
+  margin: 0 auto;
+  padding-top: 1.75rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.wordmark-sub {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  color: var(--ink-2);
+}
+
+/* Said plainly and permanently: this is a student reconstruction, not ANU's
+   own system, and shouldn't be mistaken for it. */
+.badge {
+  margin-left: auto;
+  align-self: center;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+  border: 1px solid var(--rule-strong);
+  padding: 0.1rem 0.45rem;
+}
+
 nav {
-  max-width: 44rem;
-  margin: 0 auto 2rem;
+  max-width: 45rem;
+  margin: 0.85rem auto 3rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  border-bottom: 1px solid #d8d6d1;
-  padding-bottom: 0.75rem;
+  gap: 1.75rem;
+  border-top: 3px solid var(--gold);
+  border-bottom: 1px solid var(--rule);
+  padding: 0.7rem 0;
 }
 
 a {
-  color: #0b5fff;
+  color: var(--ink);
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+nav a {
+  text-decoration: none;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+  padding-bottom: 0.1rem;
+}
+
+nav a:hover {
+  color: var(--ink);
 }
 
 nav a[aria-current="page"] {
-  color: #1a1a1a;
+  color: var(--ink);
   font-weight: 600;
-  text-decoration: none;
+  border-bottom: 2px solid var(--gold);
 }
 
+/* --- headings ------------------------------------------------------------- */
+
 h1 {
-  line-height: 1.25;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 2.4rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.6rem;
 }
 
 h2 {
-  margin-top: 2.5rem;
-  font-size: 1.15rem;
+  margin: 3rem 0 0.25rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-3);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rule);
 }
+
+/* --- forms ---------------------------------------------------------------- */
 
 form {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  margin-block: 1rem;
+  margin-block: 1.1rem;
 }
 
 label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--ink-2);
 }
 
 input:not([type="checkbox"]) {
   flex: 1;
   min-width: 10rem;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.65rem;
   font: inherit;
-  border: 1px solid #a8a49c;
-  border-radius: 4px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
+}
+
+input:not([type="checkbox"]):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 0;
+  border-color: var(--gold);
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   flex-basis: 100%;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+/* Otherwise the browser ticks it in its own bright blue, which is the one
+   colour this palette doesn't have. */
+input[type="checkbox"] {
+  accent-color: var(--gold);
 }
 
 button {
-  padding: 0.4rem 1rem;
+  padding: 0.45rem 1.1rem;
   font: inherit;
-  border: 1px solid #0b3fa8;
-  border-radius: 4px;
-  background: #0b5fff;
-  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper);
   cursor: pointer;
 }
 
-/* One course, one offering, or one line of a study record. */
+button:hover {
+  background: var(--gold-ink);
+  border-color: var(--gold-ink);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Dropping is destructive, so it doesn't get to look like the primary action. */
+button.secondary {
+  background: transparent;
+  color: var(--ink-2);
+  border-color: var(--rule-strong);
+}
+
+button.secondary:hover {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* --- the record ----------------------------------------------------------- */
+
+/* A discrete boxed card per course, not a SaaS one: square corners, no
+   shadow, no fill beyond the page's own white. The only colour is the spine
+   down the left edge, which carries the status. */
 .records {
   list-style: none;
   padding: 0;
-  margin: 1rem 0;
+  margin: 1.25rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
 }
 
-.records li {
-  padding: 0.9rem 0;
-  border-top: 1px solid #e4e2dd;
+.card {
+  padding: 0.95rem 1.15rem 1.05rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule-strong);
 }
 
-.records form {
-  margin-block: 0.6rem 0;
+.card:hover {
+  border-color: var(--rule-strong);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card-name {
+  min-width: 0;
+  font-size: 1.02rem;
+}
+
+.card form {
+  margin-block: 0.7rem 0;
 }
 
 .code {
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
 .meta {
   display: block;
-  font-size: 0.875rem;
-  color: #55524c;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
+}
+
+/* --- the verdict ---------------------------------------------------------- */
+
+/* A letterspaced label, not a pill. The word always carries the meaning, so
+   colour only reinforces it. */
+.chip {
+  flex: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+
+.chip-open {
+  color: var(--gold-ink);
+}
+
+.chip-enrolled {
+  color: var(--ink);
+}
+
+.chip-done {
+  color: var(--ink-3);
+}
+
+.chip-blocked {
+  color: var(--danger);
+}
+
+.chip-closed {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+/* Gold marks the one row you can act on. */
+.card:has(.chip-open) {
+  border-left-color: var(--gold);
+}
+
+.card:has(.chip-enrolled) {
+  border-left-color: var(--ink);
+}
+
+.card:has(.chip-blocked) {
+  border-left-color: var(--danger);
+}
+
+.card:has(.chip-closed) {
+  border-left-color: var(--rule);
 }
 
 /* Why you can't enrol, said next to the thing you can't enrol in. */
 .blocked {
-  margin: 0.5rem 0 0;
-  font-size: 0.9rem;
-  color: #8c1d18;
+  margin: 0.7rem 0 0;
+  font-size: 0.87rem;
+  color: var(--ink-2);
 }
 
 .alert {
-  padding: 0.75rem 1rem;
-  border: 1px solid #e3b4b0;
-  border-left: 4px solid #8c1d18;
-  border-radius: 4px;
-  background: #fdeded;
-  color: #8c1d18;
+  margin-top: 1.5rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--danger);
+  border-left-width: 4px;
+  background: var(--paper);
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+/* The README, served at /readme/, is prose rather than record. */
+main :is(h2, h3) + p {
+  margin-top: 0.75rem;
 }

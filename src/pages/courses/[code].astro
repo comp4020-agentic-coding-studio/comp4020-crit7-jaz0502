@@ -10,6 +10,7 @@ import {
   termLabel,
 } from "../../lib/db";
 import { currentStudent } from "../../lib/session";
+import { type Status, statusOf } from "../../lib/status";
 
 const course = findCourse(Astro.params.code ?? "");
 if (!course) return Astro.rewrite("/404");
@@ -19,10 +20,16 @@ const groups = requirementGroups(course.id);
 const clashes = incompatibleWith(course.id);
 const offerings = listOfferings(course.id);
 
-const rows = offerings.map((offering) => ({
-  offering,
-  eligibility: student ? checkEligibility(student.id, offering.id) : undefined,
-}));
+// Only the enrolling term gets an eligibility verdict; the rest are listed so
+// you can see the class numbers, but there's nothing to decide about them yet.
+const rows = offerings.map((offering) => {
+  const thisTerm = offering.year === TERM.year && offering.semester === TERM.semester;
+  const eligibility = thisTerm && student ? checkEligibility(student.id, offering.id) : undefined;
+  const status: Status = thisTerm
+    ? statusOf(true, eligibility)
+    : { label: "Other semester", tone: "closed" };
+  return { offering, thisTerm, eligibility, status };
+});
 ---
 
 <Base title={`${course.code} ${course.title}`}>
@@ -70,9 +77,12 @@ const rows = offerings.map((offering) => ({
   }
   <ul class="records">
     {
-      rows.map(({ offering, eligibility }) => (
-        <li>
-          <span class="code">{termLabel(offering.year, offering.semester)}</span>
+      rows.map(({ offering, thisTerm, eligibility, status }) => (
+        <li class="card">
+          <div class="card-head">
+            <span class="card-name">{termLabel(offering.year, offering.semester)}</span>
+            <span class={`chip chip-${status.tone}`}>{status.label}</span>
+          </div>
           <span class="meta">
             class number {offering.classNumber} · {offering.mode}
             {offering.lastDayToEnrol ? ` · enrol by ${offering.lastDayToEnrol}` : ""}
@@ -81,7 +91,7 @@ const rows = offerings.map((offering) => ({
             <p class="blocked">
               <a href="/">Tell the app who you are</a> to enrol.
             </p>
-          ) : offering.year !== TERM.year || offering.semester !== TERM.semester ? (
+          ) : !thisTerm ? (
             <p class="blocked">
               Enrolment is open for {termLabel(TERM.year, TERM.semester)} only.
             </p>

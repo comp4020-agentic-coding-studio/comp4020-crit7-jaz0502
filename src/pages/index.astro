@@ -9,6 +9,7 @@ import {
   termLabel,
 } from "../lib/db";
 import { currentStudent } from "../lib/session";
+import { statusOf } from "../lib/status";
 
 const student = currentStudent(Astro.cookies);
 const query = Astro.url.searchParams.get("q") ?? "";
@@ -38,10 +39,10 @@ const enrolled = student
 
 const results = student
   ? searchCatalogue(query)
-      .map((row) => ({
-        ...row,
-        eligibility: row.offering ? checkEligibility(student.id, row.offering.id) : undefined,
-      }))
+      .map((row) => {
+        const eligibility = row.offering ? checkEligibility(student.id, row.offering.id) : undefined;
+        return { ...row, eligibility, status: statusOf(Boolean(row.offering), eligibility) };
+      })
       // "Offered now, and eligible" needs both facts computed above, so the
       // tickbox filters this list rather than changing what searchCatalogue
       // fetches.
@@ -92,8 +93,13 @@ const results = student
         ) : (
           <ul id="enrolled" class="records">
             {enrolled.map((e) => (
-              <li>
-                <span class="code">{e.code}</span> {e.title}
+              <li class="card">
+                <div class="card-head">
+                  <span class="card-name">
+                    <span class="code">{e.code}</span> {e.title}
+                  </span>
+                  <span class="chip chip-enrolled">Enrolled</span>
+                </div>
                 <span class="meta">
                   {e.units} units · class number {e.classNumber} · {e.mode}
                 </span>
@@ -101,7 +107,7 @@ const results = student
                   <input type="hidden" name="courseCode" value={e.code} />
                   <input type="hidden" name="year" value={String(e.year)} />
                   <input type="hidden" name="semester" value={e.semester} />
-                  <button>Drop {e.code}</button>
+                  <button class="secondary">Drop {e.code}</button>
                 </form>
               </li>
             ))}
@@ -135,19 +141,22 @@ const results = student
           </p>
         ) : (
           <ul class="records">
-            {results.map(({ course, offering, eligibility }) => (
-              <li>
-                <a class="code" href={`/courses/${course.code.toLowerCase()}/`}>
-                  {course.code}
-                </a>{" "}
-                {course.title}
+            {results.map(({ course, offering, eligibility, status }) => (
+              <li class="card">
+                <div class="card-head">
+                  <span class="card-name">
+                    <a class="code" href={`/courses/${course.code.toLowerCase()}/`}>
+                      {course.code}
+                    </a>{" "}
+                    {course.title}
+                  </span>
+                  <span class={`chip chip-${status.tone}`}>{status.label}</span>
+                </div>
                 <span class="meta">
                   {course.units} units
                   {offering ? ` · class number ${offering.classNumber} · ${offering.mode}` : ""}
                 </span>
-                {!offering ? (
-                  <p class="blocked">Not offered in {termLabel(TERM.year, TERM.semester)}.</p>
-                ) : eligibility?.ok ? (
+                {!offering ? null : eligibility?.ok ? (
                   <form method="post" action="/api/enrol">
                     <input type="hidden" name="courseCode" value={course.code} />
                     <input type="hidden" name="year" value={String(TERM.year)} />

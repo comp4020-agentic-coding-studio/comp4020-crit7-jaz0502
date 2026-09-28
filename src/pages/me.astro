@@ -36,11 +36,16 @@ const units = enrolled.reduce((total, e) => total + e.units, 0);
             </p>
             <ul class="records">
               {enrolled.map((e) => (
-                <li>
-                  <a class="code" href={`/courses/${e.code.toLowerCase()}/`}>
-                    {e.code}
-                  </a>{" "}
-                  {e.title}
+                <li class="card">
+                  <div class="card-head">
+                    <span class="card-name">
+                      <a class="code" href={`/courses/${e.code.toLowerCase()}/`}>
+                        {e.code}
+                      </a>{" "}
+                      {e.title}
+                    </span>
+                    <span class="chip chip-enrolled">Enrolled</span>
+                  </div>
                   <span class="meta">
                     {termLabel(e.year, e.semester)} · class number {e.classNumber} · {e.mode}
                   </span>
@@ -61,11 +66,16 @@ const units = enrolled.reduce((total, e) => total + e.units, 0);
         ) : (
           <ul class="records">
             {completed.map((e) => (
-              <li>
-                <a class="code" href={`/courses/${e.code.toLowerCase()}/`}>
-                  {e.code}
-                </a>{" "}
-                {e.title}
+              <li class="card">
+                <div class="card-head">
+                  <span class="card-name">
+                    <a class="code" href={`/courses/${e.code.toLowerCase()}/`}>
+                      {e.code}
+                    </a>{" "}
+                    {e.title}
+                  </span>
+                  <span class="chip chip-done">Completed</span>
+                </div>
                 <span class="meta">{termLabel(e.year, e.semester)}</span>
               </li>
             ))}
