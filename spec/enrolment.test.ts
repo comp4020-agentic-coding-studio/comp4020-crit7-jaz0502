@@ -131,6 +131,42 @@ describe("dropping", () => {
     expect(res.status).toBe(303);
     expect(await (await get("/", cookie)).text()).not.toContain("Drop MATH1013");
   });
+
+  it("can be done from the record page, and lands back on it", async () => {
+    const cookie = await signIn();
+    await enrolIn("STAT1008", cookie);
+    expect(await (await get("/me/", cookie)).text()).toContain("Drop STAT1008");
+
+    const res = await post(
+      "/api/drop",
+      new URLSearchParams({
+        courseCode: "STAT1008",
+        year: "2027",
+        semester: "Second",
+        returnTo: "/me/",
+      }),
+      cookie,
+    );
+    expect(res.headers.get("location")).toBe("/me/");
+    expect(await (await get("/me/", cookie)).text()).not.toContain("Drop STAT1008");
+  });
+
+  it("ignores a return path it doesn't recognise", async () => {
+    const cookie = await signIn();
+    await enrolIn("MATH1013", cookie);
+
+    const res = await post(
+      "/api/drop",
+      new URLSearchParams({
+        courseCode: "MATH1013",
+        year: "2027",
+        semester: "Second",
+        returnTo: "https://example.com/phish",
+      }),
+      cookie,
+    );
+    expect(res.headers.get("location")).toBe("/");
+  });
 });
 
 describe("the live stream", () => {

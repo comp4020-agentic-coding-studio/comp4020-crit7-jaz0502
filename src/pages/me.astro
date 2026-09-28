@@ -49,6 +49,17 @@ const units = enrolled.reduce((total, e) => total + e.units, 0);
                   <span class="meta">
                     {termLabel(e.year, e.semester)} · class number {e.classNumber} · {e.mode}
                   </span>
+                  <form
+                    method="post"
+                    action="/api/drop"
+                    onsubmit={`return confirm("Drop ${e.code}?")`}
+                  >
+                    <input type="hidden" name="courseCode" value={e.code} />
+                    <input type="hidden" name="year" value={String(e.year)} />
+                    <input type="hidden" name="semester" value={e.semester} />
+                    <input type="hidden" name="returnTo" value="/me/" />
+                    <button class="secondary">Drop {e.code}</button>
+                  </form>
                 </li>
               ))}
             </ul>
