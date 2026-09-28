@@ -97,7 +97,7 @@ const results = student
                 <span class="meta">
                   {e.units} units · class number {e.classNumber} · {e.mode}
                 </span>
-                <form method="post" action="/api/drop">
+                <form method="post" action="/api/drop" onsubmit={`return confirm("Drop ${e.code}?")`}>
                   <input type="hidden" name="courseCode" value={e.code} />
                   <input type="hidden" name="year" value={String(e.year)} />
                   <input type="hidden" name="semester" value={e.semester} />
@@ -114,8 +114,14 @@ const results = student
           <input id="q" name="q" value={query} maxlength="60" placeholder="COMP3430" />
           <button>Search</button>
           <label class="checkbox">
-            <input type="checkbox" name="eligibleOnly" value="1" checked={eligibleOnly} />
-            Only show courses offered now that I can enrol in
+            <input
+              type="checkbox"
+              name="eligibleOnly"
+              value="1"
+              checked={eligibleOnly}
+              onchange="this.form.submit()"
+            />
+            Only show eligible courses
           </label>
         </form>
 
