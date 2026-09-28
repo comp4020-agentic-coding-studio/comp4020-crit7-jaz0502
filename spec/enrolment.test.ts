@@ -104,6 +104,17 @@ describe("rules the enrolment has to satisfy", () => {
     const res = await enrolIn("COMP3630", cookie);
     expect(errorFrom(res)).toBe("unknown-offering");
   });
+
+  it("refuses a fifth 6-unit course once the 24-unit cap is reached", async () => {
+    const cookie = await signIn();
+    // Four 6-unit courses a fresh student is eligible for, none of which
+    // require each other, so all four succeed before the cap bites.
+    for (const code of ["COMP1600", "COMP2100", "COMP2610", "COMP3600"]) {
+      expect(errorFrom(await enrolIn(code, cookie))).toBeNull();
+    }
+    const res = await enrolIn("COMP2400", cookie);
+    expect(errorFrom(res)).toBe("semester-full");
+  });
 });
 
 describe("dropping", () => {

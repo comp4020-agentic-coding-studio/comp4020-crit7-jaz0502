@@ -48,6 +48,11 @@ export type { Course, Enrolment, Offering, Student };
 // teaching period; everything before it is study history.
 export const TERM = { year: 2027, semester: "Second" } as const;
 
+// ANU's standard full-time load. Enforced by units rather than a course
+// count, since the catalogue now has 12-unit courses alongside 6-unit ones —
+// "4 courses" only equals "24 units" when every course happens to be 6.
+export const SEMESTER_UNIT_CAP = 24;
+
 export const termLabel = (year: number, semester: string) =>
   `${semester} Semester ${year}`;
 
@@ -216,6 +221,24 @@ export type Eligibility = { ok: true } | { ok: false; reason: string; detail: st
 const list = (codes: string[]) =>
   codes.length <= 1 ? (codes[0] ?? "") : `${codes.slice(0, -1).join(", ")} or ${codes[codes.length - 1]}`;
 
+function enrolledUnits(studentId: number, year: number, semester: string): number {
+  const rows = db
+    .select({ units: courses.units })
+    .from(enrolments)
+    .innerJoin(offerings, eq(enrolments.offeringId, offerings.id))
+    .innerJoin(courses, eq(offerings.courseId, courses.id))
+    .where(
+      and(
+        eq(enrolments.studentId, studentId),
+        eq(enrolments.status, "enrolled"),
+        eq(offerings.year, year),
+        eq(offerings.semester, semester),
+      ),
+    )
+    .all();
+  return rows.reduce((sum, row) => sum + row.units, 0);
+}
+
 /**
  * Whether a student may take an offering, and if not, why — in words a person
  * can act on. Ordered so the first failure is the most useful one to report.
@@ -261,6 +284,19 @@ export function checkEligibility(studentId: number, offeringId: number): Eligibi
         detail: `${course.code} requires ${list(codes)}, which you haven't completed.`,
       };
     }
+  }
+
+  // Checked last: a course you're otherwise entitled to still isn't yours to
+  // add once your load for the term is full, but that's a fact about your
+  // whole semester, not this course — the more specific reasons above take
+  // priority when more than one applies.
+  const current = enrolledUnits(studentId, target.offering.year, target.offering.semester);
+  if (current + course.units > SEMESTER_UNIT_CAP) {
+    return {
+      ok: false,
+      reason: "semester-full",
+      detail: `Enrolling in ${course.code} would take you to ${current + course.units} units this semester; the cap is ${SEMESTER_UNIT_CAP}.`,
+    };
   }
 
   return { ok: true };

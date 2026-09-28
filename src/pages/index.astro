@@ -5,6 +5,7 @@ import {
   findCourse,
   listEnrolments,
   searchCatalogue,
+  SEMESTER_UNIT_CAP,
   TERM,
   termLabel,
 } from "../lib/db";
@@ -24,6 +25,7 @@ const REASONS: Record<string, string> = {
   "already-completed": "you've already completed it",
   incompatible: "it's incompatible with something you've taken",
   "missing-requisite": "you haven't completed its requisites",
+  "semester-full": "it would take you over the 24-unit cap for this semester",
   "unknown-offering": "it isn't offered in this semester",
   "unknown-course": "no course matches that code",
 };
@@ -91,6 +93,11 @@ const results = student
         {enrolled.length === 0 ? (
           <p>Nothing yet. Find a course below.</p>
         ) : (
+          <>
+            <p class="meta">
+              {enrolled.reduce((sum, e) => sum + e.units, 0)} of {SEMESTER_UNIT_CAP} units this
+              semester
+            </p>
           <ul id="enrolled" class="records">
             {enrolled.map((e) => (
               <li class="card">
@@ -111,7 +118,8 @@ const results = student
                 </form>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
 
         <h2>Find a course</h2>
