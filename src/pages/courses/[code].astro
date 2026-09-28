@@ -55,10 +55,19 @@ const rows = offerings.map((offering) => ({
   }
 
   <h2>Offerings</h2>
-  <p>
-    Every class number below is real, and you never need to read one. Enrolling takes the code
-    and the semester; the app looks the rest up.
-  </p>
+  {
+    rows.length === 0 ? (
+      <p>
+        Programs and Courses lists no offerings for this course at all right now — not just this
+        semester. It's real, it's just not running.
+      </p>
+    ) : (
+      <p>
+        Every class number below is real, and you never need to read one. Enrolling takes the code
+        and the semester; the app looks the rest up.
+      </p>
+    )
+  }
   <ul class="records">
     {
       rows.map(({ offering, eligibility }) => (
