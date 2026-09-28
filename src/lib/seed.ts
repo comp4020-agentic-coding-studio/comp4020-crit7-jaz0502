@@ -22,6 +22,8 @@ import { courses, incompatibilities, offerings, requirements } from "./schema";
 type Seed = {
   code: string;
   title: string;
+  /** Most courses are 6 units; a handful of projects/internships aren't. */
+  units?: number;
   description: string;
   requisiteText: string;
   /** CNF: satisfy one code from each inner array. */
@@ -281,6 +283,7 @@ export function syncCatalogue(db: BetterSQLite3Database): void {
   for (const entry of CATALOGUE) {
     const fields = {
       title: entry.title,
+      units: entry.units ?? 6,
       description: entry.description,
       requisiteText: entry.requisiteText,
     };
@@ -342,13 +345,27 @@ export function syncCatalogue(db: BetterSQLite3Database): void {
       }
     });
 
-    // Incompatibility runs both ways, so each pair is stored in both
-    // directions and the eligibility check only ever looks one way.
+  }
+
+  // Incompatibility runs both ways, but the data only declares each pair
+  // once — on whichever course happens to carry it below — and this
+  // symmetrizes it into both directions. At catalogue-this-size, requiring
+  // every entry to also list itself on the other course's incompatibleWith
+  // is a standing invitation to declare one side and forget the other; a
+  // pair-set closes that off entirely rather than relying on care.
+  const pairs = new Set<string>();
+  for (const entry of CATALOGUE) {
+    const courseId = ids.get(entry.code);
+    if (courseId === undefined) continue;
     for (const code of entry.incompatibleWith ?? []) {
       const withCourseId = ids.get(code);
-      if (withCourseId !== undefined) {
-        db.insert(incompatibilities).values({ courseId, withCourseId }).run();
-      }
+      if (withCourseId === undefined) continue;
+      pairs.add(courseId < withCourseId ? `${courseId}-${withCourseId}` : `${withCourseId}-${courseId}`);
     }
+  }
+  for (const pair of pairs) {
+    const [a, b] = pair.split("-").map(Number);
+    db.insert(incompatibilities).values({ courseId: a, withCourseId: b }).run();
+    db.insert(incompatibilities).values({ courseId: b, withCourseId: a }).run();
   }
 }
