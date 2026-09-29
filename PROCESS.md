@@ -1,54 +1,12 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-Written by you, for a reader: how you got from the brief to the harness and
-agentic workflow behind this submission. Markers read this file and follow its
-citations; they don't trawl the repo for evidence you didn't point at.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and its
-[word counts](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#word-counts)
-cover every deliverable.
-
 ## What I built
 
-A sentence or two. `README.md` is where the account of what the app is and what
-good means here lives; this file is how you got there.
+I rebuilt the ANU course enrolment experience as a full-stack application focused on making course selection more direct. The original process requires students to move between Programs and Courses and ANU Hub. Students have to first find a course, open its page, locate the class number, and then enter that number into the enrolment system. My version allows courses to be searched and selected without requiring the user to find and enter a separate class number. I also added an eligibility filter so students can choose to view only courses they are eligible to enrol in, rather than discovering their eligibility only after attempting to enrol.
+
 
 ## How I got here
 
-The account of the process: how the work actually went, and how you knew the
-result was right. Tell it in whatever order makes it clear. A weekly prototype
-needs a paragraph or two; an assignment needs more.
+While testing the deployed prototype, I noticed that some courses could not be found even though they had been added. Instead of assuming the search was broken, I tested the deployed database and traced the issue to the catalogue only being seeded when the database was empty. This meant that newly added courses never reached the live database. The automated tests had not caught this because they ran against a fresh database each time. I fixed the process and verified it against a database rolled back to the old state with existing enrolments in it. I knew the fix worked because a single boot restored the missing courses while leaving every enrolment untouched [63c6c70](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-jaz0502/commit/63c6c70a6897a17a7ee081d8f1d55e6aff83971a).
 
-Cite the record as you go, as links whose text is the commit hash or range and
-whose target is this repo's commit or compare URL, so a reader clicks straight
-to the evidence:
-
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
-
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
-
-> the prompt, verbatim
-
-Screenshots are welcome where one carries the point better than a sentence does.
-Commit the file to this repo and link it with a **relative** path, which is what
-makes it render on GitHub: `![alt text](docs/before.png)`. Images don't count
-towards the word count and don't replace the citation.
-
-## Before you ship
-
-`pnpm check:evidence` verifies that this comment is gone, that your citations
-resolve to real commits, that a crit week's reflection entry is in
-`reflections/`, and that your `CLAUDE.md` is there. It checks that your account
-is traceable, not that it is good: that is the marker's call.
-
-Images aren't checked: unlike a citation whose SHA doesn't resolve, a broken
-image is visible the moment this file is rendered on GitHub.
+When implementing the “Only show eligible courses” checkbox, I noticed that selecting it did not immediately change the results. Instead, users had to click Search again. Rather than keeping this behaviour because it technically worked,  I changed the implementation so that the course list updates immediately when the checkbox is clicked. I verified the change by testing the deployed interface and confirming that ineligible courses disappeared as soon as the filter was enabled. This made the user experience more intuitive. [23d9911](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-jaz0502/commit/23d9911b1863bba1d3463de324cd3a40a37ae910).
